@@ -217,6 +217,11 @@ int main(int argc, char *argv[])
 			return FAILURE;
 		}
 
+		if (ctx_hand_shake(&user_comm,&my_dest[0],&rem_dest[0])) {
+			fprintf(stderr," Failed to exchange data between server and clients\n");
+			return FAILURE;
+		}
+
 		xchg_bw_reports(&user_comm, &my_bw_rep,&rem_bw_rep,atof(user_param.rem_version));
 		print_full_bw_report(&user_param, &rem_bw_rep, NULL);
 
@@ -259,16 +264,37 @@ int main(int argc, char *argv[])
 				}
 			}
 
+			if (i == 1) { 
+	                    printf("waiting for signal before starting RDMA test, press any key \n");
+                            getchar();
+
+			    if (ctx_hand_shake(&user_comm,&my_dest[0],&rem_dest[0])) {
+			    	fprintf(stderr,"Failed to sync between server and client between different msg sizes\n");
+			    	return FAILURE;
+			    }
+			}
+
+
 			if(user_param.duplex) {
-				if (ctx_hand_shake(&user_comm,&my_dest[0],&rem_dest[0])) {
-					fprintf(stderr,"Failed to sync between server and client between different msg sizes\n");
-					return FAILURE;
-				}
+			    if (ctx_hand_shake(&user_comm,&my_dest[0],&rem_dest[0])) {
+			    	fprintf(stderr,"Failed to sync between server and client between different msg sizes\n");
+			    	return FAILURE;
+			    }
 			}
 
 			if(run_iter_bw(&ctx,&user_param)) {
 				fprintf(stderr," Failed to complete run_iter_bw function successfully\n");
 				return FAILURE;
+			}
+
+			if (i == 23) { 
+	                    printf("waiting for signal before teardown, press any key \n");
+                            getchar();
+
+			    if (ctx_hand_shake(&user_comm,&my_dest[0],&rem_dest[0])) {
+			    	fprintf(stderr,"Failed to sync between server and client between different msg sizes\n");
+			    	return FAILURE;
+			    }
 			}
 
 			if (user_param.duplex && (atof(user_param.version) >= 4.6)) {
