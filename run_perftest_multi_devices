@@ -4,6 +4,7 @@
 GET_HELP=0
 HAVE_CORES=0
 HAVE_DEVICES=0
+HAVE_GPUS=0
 HAVE_IB_PORTS=0
 HAVE_GID_INDEXES=0
 HAVE_REMOTE_HOST=0
@@ -22,6 +23,12 @@ function force_dependencies {
 	if [[ $HAVE_DEVICES -eq 0 ]]
 	then
 		echo "-d/--devices flag is mandatory"
+		exit
+	fi
+
+	if [[ $HAVE_GPUS -eq 0 ]]
+	then
+		echo "-g/--gpus flag is mandatory"
 		exit
 	fi
 
@@ -71,7 +78,7 @@ function run_commands {
 		fi
 
 		#mandatory:
-		cmd="$cmd $TEST_CMD -d ${DEVICE_LIST[$I]} -p $(($BASE_TCP_PORT+I))"
+		cmd="$cmd CUDA_VISIBLE_DEVICES=${GPU_LIST[$I]} $TEST_CMD -d ${DEVICE_LIST[$I]} -p $(($BASE_TCP_PORT+I))"
 
 		#optional:
 		if [[ $HAVE_IB_PORTS -eq 1 ]]
@@ -110,6 +117,9 @@ function print_usage {
 	echo "    -d, --devices       List of IB devices, seperated by comma. This will override '-d, --ib-dev' flag if existed in the perftest command."
 	echo "                        i.e. --devices dev1,dev2"
 
+	echo "    -g, --gpus          List of GPUs, seperated by comma. This will have to be used in conjunction with --use_cuda flag in perftest command"
+	echo "                        i.e. --gpus gpu0,gpu1"
+
 	echo "    -C, --cmd           A valid perftest command."
 	echo "                        i.e. --cmd \"ib_write_bw --size 64 --duration 3\""
 
@@ -146,6 +156,12 @@ do
 		DEVICE_LIST=($(echo "$2" | tr "," " "))
 		HAVE_DEVICES=1
 		EXPECTED_PARAMS=${#DEVICE_LIST[@]}
+		shift # past argument
+		;;
+		-g|--gpus)
+		GPU_LIST=($(echo "$2" | tr "," " "))
+		HAVE_GPUS=1
+		EXPECTED_PARAMS=${#GPU_LIST[@]}
 		shift # past argument
 		;;
 		-i|--ib_ports)
